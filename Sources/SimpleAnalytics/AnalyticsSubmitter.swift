@@ -46,6 +46,7 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
         }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
         let requestItem = AnalyticsSubmission(deviceID: deviceID, appName: applicationName, appVersion: appVersion, systemVersion: systemVersion, platform: platform, items: items, counters: itemCounts)
         let encoder = JSONEncoder()
         do {
