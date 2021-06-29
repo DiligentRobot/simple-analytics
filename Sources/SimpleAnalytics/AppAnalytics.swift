@@ -27,6 +27,9 @@ import os.log
     /// The value used to set the maximum number of items to accumulate before submitting items to your service. If the *maxItemCount* has been increased because of submission failures, it is reset to this base value upon the next successful submission. You can adjust this value by calling the `setMaximumItemCount` method
     private var baseItemCount = 100
     
+    /// Property defining the time which should be considered idle for ending a session automatically if no actions are taken Default value is 600
+    @objc public var sessionTimeoutValue: TimeInterval = 600
+    
     // MARK: - Private Properties
     
     private(set) var items = [AnalyticsItem]()
@@ -51,7 +54,12 @@ import os.log
     #if os(iOS)
     private var backgroundTaskID = UIBackgroundTaskIdentifier(rawValue: 5000)
     #endif
+    
+    private var sessionID: String?
 
+    private var sessionStartTime: Date?
+    
+    private var idleTimer: Timer?
     
     // MARK: - Public Methods
     
@@ -171,6 +179,19 @@ import os.log
         }
     }
     
+    @objc public func startSession() {
+        sessionStartTime = Date()
+        sessionID = UUID().uuidString
+        resetTimer()
+    }
+    
+    @objc public func endSession() {
+        // TODO: Optional log session ended?
+        sessionID = nil
+        sessionStartTime = nil
+        idleTimer?.invalidate()
+    }
+    
     // MARK: - Internal & Private Methods
     // MARK: - 
     
@@ -241,7 +262,14 @@ import os.log
     }
     
     func addAnalyticsItem(_ description: String, params: [String : String]? = nil) {
-        let item = AnalyticsItem(timestamp: Date(), description: description, parameters: params)
+        // If there's no active session, start one
+        if sessionID == nil {
+            startSession()
+        }
+        // Reset the idle timer
+        resetTimer()
+        let sessionID = self.sessionID!
+        let item = AnalyticsItem(timestamp: Date(), description: description, parameters: params, sessionID: sessionID)
         items.append(item)
     
         let total = items.count + itemCounts.count
@@ -336,7 +364,15 @@ import os.log
         self.maxItemCount += resetValue
     }
     
+    private func resetTimer() {
+        idleTimer?.invalidate()
+        idleTimer = Timer.scheduledTimer(withTimeInterval: sessionTimeoutValue, repeats: false, block: { _ in
+            self.endSession()
+        })
+    }
+    
     @objc private func receivedDismissNotification(_ notification: Notification) {
+        endSession()
         if shouldSubmitAtAppDismiss == true {
             #if os(iOS)
             backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "Submit Analytics Data", expirationHandler: { [weak self] in
