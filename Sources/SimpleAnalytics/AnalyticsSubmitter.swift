@@ -15,11 +15,7 @@ protocol AnalyticsSubmitting {
 
 struct AnalyticsSubmitter: AnalyticsSubmitting {
     let endpoint: String
-    let deviceID: String
-    let applicationName: String
-    let appVersion: String
-    let platform: String
-    let systemVersion: String
+
     
     func submitItems(_ items: [AnalyticsItem],
                      successHandler: @escaping(String) -> Void,
@@ -47,7 +43,7 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-        let requestItem = AnalyticsSubmission(deviceID: deviceID, appName: applicationName, appVersion: appVersion, systemVersion: systemVersion, platform: platform, items: items)
+        let requestItem = AnalyticsSubmission(items: items)
         let encoder = JSONEncoder()
         do {
             let data = try encoder.encode(requestItem)
@@ -116,19 +112,8 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
 
 struct AnalyticsSubmission: Encodable {
     enum CodingKeys: String, CodingKey {
-        case deviceID = "device_id"
-        case appName = "app_name"
-        case appVersion = "app_version"
-        case systemVersion = "system_version"
-        case platform
         case items
     }
-    
-    let deviceID: String
-    let appName: String
-    let appVersion: String
-    let systemVersion: String
-    let platform: String
     let items: [AnalyticsItem]
 }
 

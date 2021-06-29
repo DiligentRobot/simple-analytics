@@ -46,6 +46,8 @@ import os.log
     private var deviceID: String
     private var systemVersion: String
     private var shouldSubmitAtAppDismiss = true
+
+    private var userProps: [String: String]
     
     private static var shared = AppAnalytics()
     private static let persistenceFileName = "PersistedAnalytics"
@@ -70,6 +72,10 @@ import os.log
     ///   - params: An optional String:String dictionary of additional details to record (e.g. certain app state observations) for more refined analysis
     @objc public static func addItem(_ description: String, params: [String : String]? = nil) {
         shared.addAnalyticsItem(description, params: params)
+    }
+
+    @objc public static func addUserProp(key: String, value: String) {
+        shared.userProps[key] = value
     }
 
     
@@ -241,7 +247,7 @@ import os.log
         platform = "macOS"
         let vers = ProcessInfo().operatingSystemVersion
         systemVersion = "\(vers.majorVersion).\(vers.minorVersion).\(vers.patchVersion)"
-
+        userProps = [:]
         super.init()
         NotificationCenter.default.addObserver(self, selector: #selector(receivedDismissNotification(_:)), name: NSApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(receivedDismissNotification(_:)), name: NSApplication.willTerminateNotification, object: nil)
@@ -256,7 +262,16 @@ import os.log
         // Reset the idle timer
         resetTimer()
         let sessionID = self.sessionID!
-        let item = AnalyticsItem(timestamp: Date(), description: description, parameters: params, sessionID: sessionID)
+        let item = AnalyticsItem(timestamp: Date(),
+                                 description: description,
+                                 parameters: params,
+                                 sessionID: sessionID,
+                                 deviceID: deviceID,
+                                 appName: appName,
+                                 appVersion: appVersion,
+                                 platform: platform,
+                                 systemVersion: systemVersion,
+                                 userProps: userProps)
         items.append(item)
     
         let total = items.count
@@ -284,7 +299,7 @@ import os.log
             return
         }
 
-        let submitter = self.submitter ?? AnalyticsSubmitter(endpoint: endpoint, deviceID: deviceID, applicationName: appName, appVersion: appVersion, platform: platform, systemVersion: systemVersion)
+        let submitter = self.submitter ?? AnalyticsSubmitter(endpoint: endpoint)
         self.submitter = submitter
 
         self.items.removeAll()
