@@ -39,23 +39,5 @@
         }
 
 
-        func testCount() {
-            let moveCount = 5
-            let jumpCount = 23
-            
-            for _ in 1...jumpCount {
-                manager.addCount(jumpFive)
-            }
-            for _ in 1...moveCount {
-                manager.addCount(moveSquare)
-            }
-            
-            let counters = manager.itemCounts
-            let jumpFiveItem = counters.first(where: { $0.name == jumpFive })
-            XCTAssertNotNil(jumpFiveItem)
-            XCTAssertEqual(jumpFiveItem!.count, jumpCount)
-            let squareItem = counters.first(where: { $0.name == moveSquare })
-            XCTAssertEqual(squareItem!.count, moveCount)
-        }
         
     }

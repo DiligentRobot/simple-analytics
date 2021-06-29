@@ -8,9 +8,9 @@
 import Foundation
 
 protocol AnalyticsSubmitting {
-    func submitItems(_ items: [AnalyticsItem], itemCounts: [AnalyticsCount],
+    func submitItems(_ items: [AnalyticsItem],
                      successHandler: @escaping(String) -> Void,
-                     errorHandler: @escaping([AnalyticsItem], [AnalyticsCount]) -> Void)
+                     errorHandler: @escaping([AnalyticsItem]) -> Void)
 }
 
 struct AnalyticsSubmitter: AnalyticsSubmitting {
@@ -21,9 +21,9 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
     let platform: String
     let systemVersion: String
     
-    func submitItems(_ items: [AnalyticsItem], itemCounts: [AnalyticsCount],
+    func submitItems(_ items: [AnalyticsItem],
                      successHandler: @escaping(String) -> Void,
-                     errorHandler: @escaping([AnalyticsItem], [AnalyticsCount]) -> Void) {
+                     errorHandler: @escaping([AnalyticsItem]) -> Void) {
         guard endpoint.isEmpty == false else {
             let requiresEndpointString =
                 """
@@ -35,19 +35,19 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
                 
                 """
             SimpleAnalytics.debugLog("%@", requiresEndpointString)
-            errorHandler(items, itemCounts)
+            errorHandler(items)
             return
         }
         
         guard let url = URL(string: endpoint) else {
             SimpleAnalytics.debugLog("Can't form URL from endpoint string")
-            errorHandler(items, itemCounts)
+            errorHandler(items)
             return
         }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
-        let requestItem = AnalyticsSubmission(deviceID: deviceID, appName: applicationName, appVersion: appVersion, systemVersion: systemVersion, platform: platform, items: items, counters: itemCounts)
+        let requestItem = AnalyticsSubmission(deviceID: deviceID, appName: applicationName, appVersion: appVersion, systemVersion: systemVersion, platform: platform, items: items)
         let encoder = JSONEncoder()
         do {
             let data = try encoder.encode(requestItem)
@@ -59,7 +59,7 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
             let task = URLSession(configuration: config).dataTask(with: urlRequest) { (data, response, error) in
                 if let taskError = error {
                     SimpleAnalytics.debugLog("Error posting analytics request: %@", taskError.localizedDescription)
-                    errorHandler(items, itemCounts)
+                    errorHandler(items)
                 } else {
                     if let httpResponse = response as? HTTPURLResponse {
                         let code = httpResponse.statusCode
@@ -76,7 +76,7 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
                                 }
                             }
                             #endif
-                            errorHandler(items, itemCounts)
+                            errorHandler(items)
                             return
                         }
                     }
@@ -85,13 +85,13 @@ struct AnalyticsSubmitter: AnalyticsSubmitting {
                         let message = self.handleResponseData(data)
                         successHandler(message)
                     } else {
-                        errorHandler(items, itemCounts)
+                        errorHandler(items)
                     }
                 }
             }
             task.resume()
         } catch {
-            errorHandler(items, itemCounts)
+            errorHandler(items)
         }
 
     }
@@ -122,7 +122,6 @@ struct AnalyticsSubmission: Encodable {
         case systemVersion = "system_version"
         case platform
         case items
-        case counters
     }
     
     let deviceID: String
@@ -131,7 +130,6 @@ struct AnalyticsSubmission: Encodable {
     let systemVersion: String
     let platform: String
     let items: [AnalyticsItem]
-    let counters: [AnalyticsCount]
 }
 
 struct AnalyticsSubmissionResponse: Decodable {

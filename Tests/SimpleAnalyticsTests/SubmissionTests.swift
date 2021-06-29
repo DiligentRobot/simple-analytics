@@ -90,14 +90,14 @@ final class SubmissionTests: XCTestCase {
 struct TestSubmitter: AnalyticsSubmitting {
     var shouldSucceed: Bool
     
-    func submitItems(_ items: [AnalyticsItem], itemCounts: [AnalyticsCount],
+    func submitItems(_ items: [AnalyticsItem],
                      successHandler: @escaping(String) -> Void,
-                     errorHandler: @escaping([AnalyticsItem], [AnalyticsCount]) -> Void) {
+                     errorHandler: @escaping([AnalyticsItem]) -> Void) {
         if shouldSucceed == true {
-            successHandler(successMsgTemplate.replacingOccurrences(of: "<%@>", with: "\(items.count + itemCounts.count)"))
+            successHandler(successMsgTemplate.replacingOccurrences(of: "<%@>", with: "\(items.count)"))
         } else {
             DispatchQueue.main.async {
-                errorHandler(items, itemCounts)
+                errorHandler(items)
             }
         }
     }

@@ -18,7 +18,7 @@ import os.log
 
     /// Getter for the count of all active items to be submitted.
     @objc public static var itemCount: Int {
-        return shared.items.count + shared.itemCounts.count
+        return shared.items.count
     }
     
     /// Property defining an increment value to be added to the maximum number of items to accumulate before submitting to your service. To add a delay before attempting to reach your server again, this value is automatically added to the *maxItemCount* if a submission fails so that the next item added does not prompt another submission. If desired, you can adjust this value with by calling the `setSubmitFailureIncrement` function.
@@ -33,7 +33,6 @@ import os.log
     // MARK: - Private Properties
     
     private(set) var items = [AnalyticsItem]()
-    private(set) var itemCounts = [AnalyticsCount]()
     
     /// An instance of a type that conforms to the `AnalyticsSubmitting` protocol. This has internal scope to allow testing. An instance of the `AnalyticsSubmitter` struct is used automatically unless this property has been set to something else.
     var submitter: AnalyticsSubmitting?
@@ -72,12 +71,7 @@ import os.log
     @objc public static func addItem(_ description: String, params: [String : String]? = nil) {
         shared.addAnalyticsItem(description, params: params)
     }
-    
-    /// Static method to count an occurrence of any event
-    /// - Parameter description: String describing the item to be counted. An item is added and set to a value of 1, or incremented by 1.
-    @objc public static func countItem(_ description: String) {
-        shared.addCount(description)
-    }
+
     
     // MARK: - Configuring output and behavior
     
@@ -129,7 +123,7 @@ import os.log
         if fileMgr.fileExists(atPath: url.path) {
             try? fileMgr.removeItem(at: url)
         }
-        let model = PersistenceModel(items: shared.items, counters: shared.itemCounts)
+        let model = PersistenceModel(items: shared.items)
         let encoder = JSONEncoder()
         do {
             let data = try encoder.encode(model)
@@ -158,17 +152,10 @@ import os.log
             do {
                 let model = try decoder.decode(PersistenceModel.self, from: data)
                 let items = model.items
-                let counters = model.counters
                 if items.isEmpty == false {
                     let itemsHash = items.hashValue
                     if itemsHash != shared.items.hashValue {
                         shared.items.insert(contentsOf: items, at: 0)
-                    }
-                }
-                if counters.isEmpty == false {
-                    let countersHash = counters.hashValue
-                    if countersHash != shared.itemCounts.hashValue {
-                        shared.itemCounts.insert(contentsOf: counters, at: 0)
                     }
                 }
             } catch {
@@ -272,24 +259,7 @@ import os.log
         let item = AnalyticsItem(timestamp: Date(), description: description, parameters: params, sessionID: sessionID)
         items.append(item)
     
-        let total = items.count + itemCounts.count
-        if total >= maxItemCount {
-            // submit and clear items if successful or otherwise restore items
-            clearAndSubmitItems()
-        }
-    }
-    
-    func addCount(_ description: String) {
-        if let index = itemCounts.firstIndex(where: { $0.name == description }) {
-            var count = itemCounts[index]
-            count.count += 1
-            itemCounts[index] = count
-        } else {
-            let count = AnalyticsCount(name: description, count: 1)
-            itemCounts.append(count)
-        }
-
-        let total = items.count + itemCounts.count
+        let total = items.count
         if total >= maxItemCount {
             // submit and clear items if successful or otherwise restore items
             clearAndSubmitItems()
@@ -303,9 +273,8 @@ import os.log
     
     func clearAndSubmitItems() {
         let items = self.items
-        let counters = self.itemCounts
         
-        guard items.isEmpty == false || counters.isEmpty == false else {
+        guard items.isEmpty == false else {
             SimpleAnalytics.debugLog("Nothing to submit")
             #if os(iOS)
             if backgroundTaskID != .invalid {
@@ -319,15 +288,14 @@ import os.log
         self.submitter = submitter
 
         self.items.removeAll()
-        self.itemCounts.removeAll()
 
         DispatchQueue.global().async { [weak self] in
-            self?.submitItems(items, counters: counters, with: submitter)
+            self?.submitItems(items, with: submitter)
         }
     }
     
-    private func submitItems(_ items: [AnalyticsItem], counters: [AnalyticsCount], with submitter: AnalyticsSubmitting) {
-        submitter.submitItems(items, itemCounts: counters, successHandler: { [weak self] message in
+    private func submitItems(_ items: [AnalyticsItem], with submitter: AnalyticsSubmitting) {
+        submitter.submitItems(items, successHandler: { [weak self] message in
             DispatchQueue.main.async {
                 SimpleAnalytics.debugLog("Success submitting analytics: %@", message)
                 if let base = self?.baseItemCount {
@@ -340,11 +308,11 @@ import os.log
                 UIApplication.shared.endBackgroundTask(task)
             }
             #endif
-        }) { [weak self] (errorItems, errorCounters) in
+        }) { [weak self] (errorItems) in
             // restore to respective properties
             DispatchQueue.main.async {
                 SimpleAnalytics.debugLog("Analytics submission failed. Restoring items.")
-                self?.resetItems(errorItems, counters: errorCounters)
+                self?.resetItems(errorItems)
                 #if os(iOS)
                 if let task = self?.backgroundTaskID,
                    task != .invalid {
@@ -355,9 +323,8 @@ import os.log
         }
     }
     
-    private func resetItems(_ items: [AnalyticsItem], counters: [AnalyticsCount]) {
+    private func resetItems(_ items: [AnalyticsItem]) {
         self.items.insert(contentsOf: items, at: 0)
-        self.itemCounts.insert(contentsOf: counters, at: 0)
         
         // add to maxCount so there's a delay before retrying
         let resetValue = self.maxCountResetValue
@@ -396,5 +363,4 @@ import os.log
 
 struct PersistenceModel: Codable {
     let items: [AnalyticsItem]
-    let counters: [AnalyticsCount]
 }
