@@ -30,16 +30,16 @@ struct AnalyticsItem: Hashable, Codable {
 
     
     enum CodingKeys: String, CodingKey {
-        case eventName
+        case eventName = "event_name"
         case timestamp
-        case sessionID
-        case eventDetails
+        case sessionID = "session_id"
+        case eventDetails = "event_details"
         case deviceID = "device_id"
         case appName = "app_name"
         case appVersion = "app_version"
         case systemVersion = "system_version"
         case platform
-        case userProps
+        case userProps = "user_props"
     }
     
     init(timestamp: Date, eventName: String, eventDetails: [String : String]?, sessionID: String, deviceID: String, appName: String, appVersion: String, platform: String, systemVersion: String, userProps: [String: String]) {
