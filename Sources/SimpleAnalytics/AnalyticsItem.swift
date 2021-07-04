@@ -20,7 +20,7 @@ struct AnalyticsItem: Hashable, Codable {
     let timestamp: Date
     let eventName: String
     let sessionID: String
-    let eventDetails: [String : String]?
+    let eventDetails: [String : String]
     let deviceID: String
     let appName: String
     let appVersion: String
@@ -42,7 +42,7 @@ struct AnalyticsItem: Hashable, Codable {
         case userProps
     }
     
-    init(timestamp: Date, eventName: String, eventDetails: [String : String]?, sessionID: String, deviceID: String, appName: String, appVersion: String, platform: String, systemVersion: String, userProps: [String: String]) {
+    init(timestamp: Date, eventName: String, eventDetails: [String : String], sessionID: String, deviceID: String, appName: String, appVersion: String, platform: String, systemVersion: String, userProps: [String: String]) {
         self.timestamp = timestamp
         self.eventName = eventName
         self.eventDetails = eventDetails
@@ -60,7 +60,7 @@ struct AnalyticsItem: Hashable, Codable {
         eventName = try values.decode(String.self, forKey: .eventName)
         let dateString = try values.decode(String.self, forKey: .timestamp)
         timestamp = dateString.dateFromISOString() ?? Date()
-        eventDetails = try values.decodeIfPresent([String : String].self, forKey: .eventDetails)
+        eventDetails = try values.decode([String : String].self, forKey: .eventDetails)
         sessionID = try values.decode(String.self, forKey: .sessionID)
         deviceID = try values.decode(String.self, forKey: .deviceID)
         appName = try values.decode(String.self, forKey: .appName)
@@ -74,9 +74,7 @@ struct AnalyticsItem: Hashable, Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(eventName, forKey: .eventName)
         try container.encode(timestamp.toISOString(), forKey: .timestamp)
-        if let eventDetails = self.eventDetails {
-            try container.encode(eventDetails, forKey: .eventDetails)
-        }
+        try container.encode(eventDetails, forKey: .eventDetails)
         try container.encode(sessionID, forKey: .sessionID)
         try container.encode(deviceID, forKey: .deviceID)
         try container.encode(appName, forKey: .appName)
