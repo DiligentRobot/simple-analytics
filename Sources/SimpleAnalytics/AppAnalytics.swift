@@ -70,7 +70,7 @@ import os.log
     /// - Parameters:
     ///   - description: String describing the action or user interaction
     ///   - params: An optional String:String dictionary of additional details to record (e.g. certain app state observations) for more refined analysis
-    @objc public static func addItem(_ eventName: String, eventDetails: [String : String]? = nil) {
+    @objc public static func addItem(_ eventName: String, eventDetails: [String : String] = [:]) {
         shared.addAnalyticsItem(eventName, eventDetails: eventDetails)
     }
 
@@ -254,7 +254,7 @@ import os.log
         #endif
     }
     
-    func addAnalyticsItem(_ eventName: String, eventDetails: [String : String]? = nil) {
+    func addAnalyticsItem(_ eventName: String, eventDetails: [String : String] = [:]) {
         // If there's no active session, start one
         if sessionID == nil {
             startSession()
