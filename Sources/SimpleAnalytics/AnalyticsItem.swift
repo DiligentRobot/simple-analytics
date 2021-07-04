@@ -9,18 +9,18 @@ import Foundation
 
 struct AnalyticsItem: Hashable, Codable {
     public static func == (lhs: AnalyticsItem, rhs: AnalyticsItem) -> Bool {
-        return lhs.description == rhs.description &&
+        return lhs.eventName == rhs.eventName &&
             lhs.timestamp == rhs.timestamp
     }
     
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(description.hashValue & timestamp.hashValue)
+        hasher.combine(eventName.hashValue & timestamp.hashValue)
     }
     
     let timestamp: Date
-    let description: String
+    let eventName: String
     let sessionID: String
-    let parameters: [String : String]?
+    let eventDetails: [String : String]?
     let deviceID: String
     let appName: String
     let appVersion: String
@@ -30,10 +30,10 @@ struct AnalyticsItem: Hashable, Codable {
 
     
     enum CodingKeys: String, CodingKey {
-        case description
+        case eventName
         case timestamp
         case sessionID
-        case parameters
+        case eventDetails
         case deviceID = "device_id"
         case appName = "app_name"
         case appVersion = "app_version"
@@ -42,10 +42,10 @@ struct AnalyticsItem: Hashable, Codable {
         case userProps
     }
     
-    init(timestamp: Date, description: String, parameters: [String : String]?, sessionID: String, deviceID: String, appName: String, appVersion: String, platform: String, systemVersion: String, userProps: [String: String]) {
+    init(timestamp: Date, eventName: String, eventDetails: [String : String]?, sessionID: String, deviceID: String, appName: String, appVersion: String, platform: String, systemVersion: String, userProps: [String: String]) {
         self.timestamp = timestamp
-        self.description = description
-        self.parameters = parameters
+        self.eventName = eventName
+        self.eventDetails = eventDetails
         self.sessionID = sessionID
         self.deviceID = deviceID
         self.appName = appName
@@ -57,10 +57,10 @@ struct AnalyticsItem: Hashable, Codable {
     
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        description = try values.decode(String.self, forKey: .description)
+        eventName = try values.decode(String.self, forKey: .eventName)
         let dateString = try values.decode(String.self, forKey: .timestamp)
         timestamp = dateString.dateFromISOString() ?? Date()
-        parameters = try values.decodeIfPresent([String : String].self, forKey: .parameters)
+        eventDetails = try values.decodeIfPresent([String : String].self, forKey: .eventDetails)
         sessionID = try values.decode(String.self, forKey: .sessionID)
         deviceID = try values.decode(String.self, forKey: .deviceID)
         appName = try values.decode(String.self, forKey: .appName)
@@ -72,10 +72,10 @@ struct AnalyticsItem: Hashable, Codable {
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(description, forKey: .description)
+        try container.encode(eventName, forKey: .eventName)
         try container.encode(timestamp.toISOString(), forKey: .timestamp)
-        if let parameters = self.parameters {
-            try container.encode(parameters, forKey: .parameters)
+        if let eventDetails = self.eventDetails {
+            try container.encode(eventDetails, forKey: .eventDetails)
         }
         try container.encode(sessionID, forKey: .sessionID)
         try container.encode(deviceID, forKey: .deviceID)

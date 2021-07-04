@@ -70,8 +70,8 @@ import os.log
     /// - Parameters:
     ///   - description: String describing the action or user interaction
     ///   - params: An optional String:String dictionary of additional details to record (e.g. certain app state observations) for more refined analysis
-    @objc public static func addItem(_ description: String, params: [String : String]? = nil) {
-        shared.addAnalyticsItem(description, params: params)
+    @objc public static func addItem(_ eventName: String, eventDetails: [String : String]? = nil) {
+        shared.addAnalyticsItem(eventName, eventDetails: eventDetails)
     }
 
     @objc public static func addUserProp(key: String, value: String) {
@@ -254,7 +254,7 @@ import os.log
         #endif
     }
     
-    func addAnalyticsItem(_ description: String, params: [String : String]? = nil) {
+    func addAnalyticsItem(_ eventName: String, eventDetails: [String : String]? = nil) {
         // If there's no active session, start one
         if sessionID == nil {
             startSession()
@@ -263,8 +263,8 @@ import os.log
         resetTimer()
         let sessionID = self.sessionID!
         let item = AnalyticsItem(timestamp: Date(),
-                                 description: description,
-                                 parameters: params,
+                                 eventName: eventName,
+                                 eventDetails: eventDetails,
                                  sessionID: sessionID,
                                  deviceID: deviceID,
                                  appName: appName,
