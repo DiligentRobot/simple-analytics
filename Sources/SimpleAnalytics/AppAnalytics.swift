@@ -47,7 +47,7 @@ import os.log
     private var systemVersion: String
     private var shouldSubmitAtAppDismiss = true
 
-    private var userProps: [String: String]
+    private var userProps: [String: String] = [:]
     
     private static var shared = AppAnalytics()
     private static let persistenceFileName = "PersistedAnalytics"
