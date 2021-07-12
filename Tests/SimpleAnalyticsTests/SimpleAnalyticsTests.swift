@@ -31,11 +31,11 @@
             
             let actions = manager.items
             XCTAssertEqual(actions.count, 5)
-            XCTAssertEqual(actions[0].description, openFile)
-            XCTAssertEqual(actions[1].description, loadView)
-            XCTAssertEqual(actions[2].description, moveSquare)
-            XCTAssertEqual(actions[3].description, jumpFive)
-            XCTAssertEqual(actions[4].description, exitGame)
+            XCTAssertEqual(actions[0].eventName, openFile)
+            XCTAssertEqual(actions[1].eventName, loadView)
+            XCTAssertEqual(actions[2].eventName, moveSquare)
+            XCTAssertEqual(actions[3].eventName, jumpFive)
+            XCTAssertEqual(actions[4].eventName, exitGame)
         }
 
 
